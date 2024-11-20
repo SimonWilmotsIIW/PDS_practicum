@@ -14,7 +14,13 @@
 
 //using namespace std;
 
-const int GRID_SIZE = 10;
+//TODO: increase size by a lot
+//TODO: wrap-around grid instead of borders
+//TODO: write to file not write to console
+//TODO: work on VNC & time, max 72 cores on 1 node (max 4 nodes)
+//TODO: compare cores on 1 node with spread cores
+
+const int GRID_SIZE = 50;
 void printGrid(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1]);
 void determineState(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1]);
 void clearScreen(void);
