@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <unistd.h>
+#include <iomanip>
 
 #define OS_LINUX
 
@@ -20,10 +21,11 @@
 //TODO: work on VNC & time, max 72 cores on 1 node (max 4 nodes)
 //TODO: compare cores on 1 node with spread cores
 
-const int GRID_SIZE = 50;
+const int GRID_SIZE = 32;
 void printGrid(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1]);
 void determineState(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1]);
 void clearScreen(void);
+void printGridToFile(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1], const std::string& filename);
 
 int main(int argc, char *argv[]) {
 
@@ -37,6 +39,27 @@ int main(int argc, char *argv[]) {
     std::string number_of_cells;
     std::string start;
     std::string filename;
+
+    if(argc == 2){
+      filename = argv[1];
+      std::ifstream readfile(filename);
+      if (readfile.is_open()) {
+      std::string fileline, xx, yy;
+
+      while (std::getline(readfile, fileline)) {
+          std::stringstream ss(fileline);
+
+          std::getline(ss, xx, ' ');
+          std::getline(ss, yy, ' ');
+
+          x = stoi(xx);
+          y = stoi(yy);
+
+          gridOne[x][y] = true;
+        }
+      }
+      start = 'y';
+    }else{
 
     std::cout << "GAME OF LIFE - By Simon Wilmots & Stijn Jacobs for Parallel and Distributed Systems [PDS_4717]" << std::endl;
     std::cout << "Devised by the British mathematician John Horton Conway in 1970." << std::endl;
@@ -95,15 +118,24 @@ int main(int argc, char *argv[]) {
             gridOne[x][y] = true;
             printGrid(gridOne);
         }
+      }
+      std::cout << "Grid setup is done. Start the game ? (y/n)" << std::endl;
+      printGrid(gridOne);
+      std::cin >> start;
     }
 
-    std::cout << "Grid setup is done. Start the game ? (y/n)" << std::endl;
-    printGrid(gridOne);
-    std::cin >> start;
+    int incrementor = 0;
     if (start == "y" || start == "Y") {
         while (true) {
             printGrid(gridOne);
             determineState(gridOne);
+
+            std::ostringstream filenameStream;
+            filenameStream << "./outputs/output_grid_" << std::setw(4) << std::setfill('0') << incrementor << ".txt";
+            std::string filename = filenameStream.str();
+            printGridToFile(gridOne, filename);
+            incrementor++;
+
             usleep(200000);
             clearScreen();
         }
@@ -134,6 +166,31 @@ void printGrid(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1]) {
       }
     }
   }
+}
+
+
+void printGridToFile(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1], const std::string& filename) {
+    std::ofstream outFile(filename); 
+    if (!outFile.is_open()) {
+        std::cerr << "Error: Could not open file " << filename << " for writing." << std::endl;
+        return; 
+    }
+
+    for (int a = 1; a < GRID_SIZE; a++) {
+        for (int b = 1; b < GRID_SIZE; b++) {
+            if (gridOne[a][b] == true) {
+                outFile << " O ";
+            } else {
+                outFile << " . ";
+            }
+            if (b == GRID_SIZE - 1) {
+                outFile << std::endl;
+            }
+        }
+    }
+
+    outFile.close(); // Close the file after writing
+    std::cout << "Grid written to file: " << filename << std::endl; // Inform the user
 }
 
 void compareGrid(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1], bool gridTwo[GRID_SIZE + 1][GRID_SIZE + 1]) {
