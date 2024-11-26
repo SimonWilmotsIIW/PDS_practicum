@@ -22,10 +22,10 @@
 //TODO: compare cores on 1 node with spread cores
 
 const int GRID_SIZE = 32;
-void printGrid(std::vector<std::vector<bool>> gridOne);
-void determineState(std::vector<std::vector<bool>> gridOne);
+void printGrid(std::vector<std::vector<bool>>& gridOne);
+void determineState(std::vector<std::vector<bool>>& gridOne);
 void clearScreen(void);
-void printGridToFile(std::vector<std::vector<bool>> gridOne, const std::string& filename);
+void printGridToFile(std::vector<std::vector<bool>>& gridOne, const std::string& filename);
 
 int main(int argc, char *argv[]) {
 
@@ -153,7 +153,7 @@ void clearScreen(void) {
     std::cout << "\033[2J;" << "\033[1;1H"; // clears screen and moves cursor to home
 }
 
-void printGrid(std::vector<std::vector<bool>> gridOne) {
+void printGrid(std::vector<std::vector<bool>>& gridOne) {
   for (int a = 1; a < GRID_SIZE; a++) {
     for (int b = 1; b < GRID_SIZE; b++) {
       if (gridOne[a][b] == true) {
@@ -169,7 +169,7 @@ void printGrid(std::vector<std::vector<bool>> gridOne) {
 }
 
 
-void printGridToFile(std::vector<std::vector<bool>> gridOne, const std::string& filename) {
+void printGridToFile(std::vector<std::vector<bool>>& gridOne, const std::string& filename) {
     std::ofstream outFile(filename); 
     if (!outFile.is_open()) {
         std::cerr << "Error: Could not open file " << filename << " for writing." << std::endl;
@@ -193,37 +193,28 @@ void printGridToFile(std::vector<std::vector<bool>> gridOne, const std::string& 
     std::cout << "Grid written to file: " << filename << std::endl; // Inform the user
 }
 
-void compareGrid(std::vector<std::vector<bool>> gridOne, std::vector<std::vector<bool>> gridTwo) {
-  for (int a = 0; a < GRID_SIZE; a++) {
-    for (int b = 0; b < GRID_SIZE; b++) {
-      gridTwo[a][b] = gridOne[a][b];
-    }
-  }
-}
+void determineState(std::vector<std::vector<bool>>& gridOne) {
+    std::vector<std::vector<bool>> gridTwo = gridOne;
 
-void determineState(std::vector<std::vector<bool>> gridOne) {
-  std::vector<std::vector<bool>> gridTwo(GRID_SIZE + 1, std::vector<bool>(GRID_SIZE + 1, false));
-  compareGrid(gridOne, gridTwo);
-
-  for (int a = 1; a < GRID_SIZE; a++) {
-    for (int b = 1; b < GRID_SIZE; b++) {
-      int alive = 0;
-      for (int c = -1; c < 2; c++) {
-        for (int d = -1; d < 2; d++) {
-          if (!(c == 0 && d == 0)) {
-            if (gridTwo[a + c][b + d]) {
-              ++alive;
+    for (int a = 1; a < GRID_SIZE; a++) {
+        for (int b = 1; b < GRID_SIZE; b++) {
+            int alive = 0;
+            for (int c = -1; c < 2; c++) {
+                for (int d = -1; d < 2; d++) {
+                    if (!(c == 0 && d == 0)) {
+                        if (gridTwo[a + c][b + d]) {
+                            ++alive;
+                        }
+                    }
+                }
             }
-          }
+            if (alive < 2) {
+                gridOne[a][b] = false;
+            } else if (alive == 3) {
+                gridOne[a][b] = true;
+            } else if (alive > 3) {
+                gridOne[a][b] = false;
+            }
         }
-      }
-      if (alive < 2) {
-        gridOne[a][b] = false;
-      } else if (alive == 3) {
-        gridOne[a][b] = true;
-      } else if (alive > 3) {
-        gridOne[a][b] = false;
-      }
     }
-  }
 }
