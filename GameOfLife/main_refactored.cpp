@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
         // clearScreen();
 
         std::vector<std::vector<int>> gridOne(GRID_SIZE + 1, std::vector<int>(GRID_SIZE + 1, false));
-        int x, y, n;
+        int x, y, n, v;
 
         std::string number_of_cells;
         std::string start;
@@ -56,18 +56,19 @@ int main(int argc, char *argv[]) {
             filename = argv[1];
             std::ifstream readfile(filename);
             if (readfile.is_open()) {
-            std::string fileline, xx, yy;
+            std::string fileline, xx, yy, val;
 
             while (std::getline(readfile, fileline)) {
                 std::stringstream ss(fileline);
 
                 std::getline(ss, xx, ' ');
                 std::getline(ss, yy, ' ');
-
+                std::getline(ss, val, ' ');
                 x = stoi(xx);
                 y = stoi(yy);
-
-                gridOne[x][y] = true;
+                v = stoi(val);
+                std::cout << val << std::endl;
+                gridOne[x][y] = v;
                 }
             }
             start = 'y';
@@ -103,18 +104,19 @@ int main(int argc, char *argv[]) {
 
                     std::ifstream readfile(filename);
                     if (readfile.is_open()) {
-                        std::string fileline, xx, yy;
+                        std::string fileline, xx, yy, val;
 
                         while (std::getline(readfile, fileline)) {
                             std::stringstream ss(fileline);
 
                             std::getline(ss, xx, ' ');
                             std::getline(ss, yy, ' ');
-
+                            std::getline(ss, val, ' ');
                             x = stoi(xx);
                             y = stoi(yy);
-
-                            gridOne[x][y] = true;
+                            v = stoi(val);
+                            std::cout << val << std::endl;
+                            gridOne[x][y] = v;
                         }
                         break;
                     } else {
@@ -137,9 +139,11 @@ int main(int argc, char *argv[]) {
         }
 
         int incrementor = 0;
+        printGridToFile(gridOne, "./outputs/output_AA.txt");
+
         if (start == "y" || start == "Y") {
             while (true) {
-                printGrid(gridOne);
+                // printGrid(gridOne);
                 int chunkSize = 32 / 8;
                 for (int rank = 1; rank < comm_sz; ++rank) {
                     //start at 0 - buffer row
@@ -148,19 +152,27 @@ int main(int argc, char *argv[]) {
                     int endRow = startRow + chunkSize +1;
                     //send to worker threads - they get 2 buffer rows, but shouldn't iterate over them
                     MPI_Send(&gridOne[startRow][0], (endRow - startRow) * (GRID_SIZE + 1), MPI_INT, rank, 0, MPI_COMM_WORLD);
-                    std::cout << "Sent chunk\n";
-                    usleep(2000000);
+                    std::cout << "Sent chunk from main\n";
 
                 }
+
                 std::ostringstream filenameStream;
                 filenameStream << "./outputs/output_grid_" << std::setw(4) << std::setfill('0') << incrementor << ".txt";
                 std::string filename = filenameStream.str();
+                for (int rank = 1; rank < comm_sz; ++rank){
+                    std::cout << "RECEIVING from side\n";
+
+                    MPI_Recv(&gridOne[((rank - 1) * chunkSize)][0], (GRID_SIZE/8) * (GRID_SIZE+1), MPI_INT, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                }
+                std::cout << "RECEIVED ALL\n";
+
                 printGridToFile(gridOne, filename);
                 incrementor++;
                 determineState(gridOne);
 
-                usleep(2000000);
-                return 1;
+                usleep(1000000);
+                MPI_Barrier(MPI_COMM_WORLD);
+
                 clearScreen();
             }
         } else {
@@ -169,12 +181,19 @@ int main(int argc, char *argv[]) {
         return 0;
         }
     }else{
-        std::cout << "ELLO\n";
-        std::vector<std::vector<int>> localGrid(GRID_SIZE/8 +2, std::vector<int>(GRID_SIZE + 1, false));
-        //is this [0][0] or [1][0]
-        MPI_Recv(&localGrid[0][0], (GRID_SIZE/8 +2) * (GRID_SIZE + 1), MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        std::cout << COLOR_RED;
-        printLocalGrid(localGrid);
+        while(true){
+            std::vector<std::vector<int>> localGrid(GRID_SIZE/8 +2, std::vector<int>(GRID_SIZE + 1, false));
+            //is this [0][0] or [1][0]
+            std::cout << "RECEIVING from main\n";
+
+            MPI_Recv(&localGrid[0][0], (GRID_SIZE/8 +2) * (GRID_SIZE + 1), MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            std::cout << COLOR_RED;
+            // printLocalGrid(localGrid);
+
+            MPI_Send(&localGrid[1][0], (GRID_SIZE/8) * (GRID_SIZE + 1), MPI_INT, 0, 0, MPI_COMM_WORLD);
+            MPI_Barrier(MPI_COMM_WORLD);
+            std::cout << "SENT to main \n";
+        }
     }
 }
 
@@ -225,8 +244,8 @@ void printGridToFile(std::vector<std::vector<int>>& gridOne, const std::string& 
 
     for (int a = 1; a < GRID_SIZE; a++) {
         for (int b = 1; b < GRID_SIZE; b++) {
-            if (gridOne[a][b] == true) {
-                outFile << " O ";
+            if (gridOne[a][b] != false) {
+                outFile << " " << std::to_string(gridOne[a][b]) << " ";
             } else {
                 outFile << " . ";
             }
