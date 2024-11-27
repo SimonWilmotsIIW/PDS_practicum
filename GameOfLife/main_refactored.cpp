@@ -23,6 +23,12 @@
 //TODO: work on VNC & time, max 72 cores on 1 node (max 4 nodes)
 //TODO: compare cores on 1 node with spread cores
 
+
+// TODO:
+// TODO: MPI types for col exchange (with specific stride)
+// TODO: Go for 1D-array with correct offsets instead of 2D vector (likely source of weird behavior)
+// TODO: no more file-output
+// TODO: potentially swap file input with random state for each node?
 const int GRID_SIZE = 32;
 void printGrid(std::vector<std::vector<int>>& gridOne);
 void determineState(std::vector<std::vector<int>>& gridOne);
