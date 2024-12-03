@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS = -O3
 
-TARGET = main_vector
+TARGET = main_1D
  
 all:
 	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).cpp
