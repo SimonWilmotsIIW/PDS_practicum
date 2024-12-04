@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <vector>
 #include <mpi.h>
+//view influence of more cores/threads on VSC
+//Why do we even use MPI?
 
 #define COLOR_RED "\033[31m"
 #define COLOR_GREEN "\033[32m"
@@ -14,7 +16,7 @@
 #define COLOR_RESET "\033[0m"
 
 //Grid size, including the final buffer row/col, excluding the first buffer row/col
-#define GRID_SIZE (32 *1) +1
+#define GRID_SIZE (32 *1)
 void determineXYState(std::vector<bool>& grid, int xsize, int ysize);
 void printGrid(const std::vector<bool>& grid, int size);
 void determineState(std::vector<bool>& grid, int size);
@@ -23,7 +25,7 @@ void printGridToFile(const std::vector<bool>& grid, int size, const std::string&
 std::vector<bool> initializeGrid(int size);
 inline int getIndex(int x, int y, int size);
 std::vector<bool> charGridToBool(const std::vector<char>& charGrid, char trueChar, char falseChar);
-std::vector<char> boolToCharGrid(const std::vector<bool>& boolVec, size_t start, size_t end, char trueChar, char falseChar);
+std::vector<char> boolToCharGrid(std::vector<bool>& boolVec, size_t start, size_t end, char trueChar, char falseChar);
 
 int main(int argc, char* argv[]) {
     int global_comm_sz;
@@ -116,7 +118,6 @@ int main(int argc, char* argv[]) {
                     auto localGrid = boolToCharGrid(grid, start, end, 'x', '.');
                     MPI_Send(localGrid.data(), end - start, MPI_CHAR, rank, 0, MPI_COMM_WORLD);
                 }
-
                 // Receive processed grid slices from other ranks
                 for (int rank = 1; rank < comm_sz; ++rank) {
                     int start = getIndex((rank - 1) * chunkSize, 0, GRID_SIZE);
@@ -258,7 +259,7 @@ void determineXYState(std::vector<bool>& grid, int xsize, int ysize) {
         }
     }
 }
-std::vector<char> boolToCharGrid(const std::vector<bool>& boolVec, size_t start, size_t end, char trueChar, char falseChar) {
+std::vector<char> boolToCharGrid(std::vector<bool>& boolVec, size_t start, size_t end, char trueChar, char falseChar) {
     std::vector<char> charGrid;
     charGrid.reserve(end - start);
     
