@@ -11,7 +11,7 @@ mpi:
 	mpic++ -g -Wall -I/usr/include/lam -o mpi_main main_for_mpi.cpp
 mpi_1d:
 	mpic++ -g -Wall -I/usr/include/lam -o mpi_1d main_vector_mpi.cpp
-fuck:
+main:
 	mpic++ -g -Wall -I/usr/include/lam -o mpi_v2_1d vector_mpi_2.cpp
 clean:
 	$(RM) $(TARGET)
