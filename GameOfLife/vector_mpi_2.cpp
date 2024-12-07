@@ -118,23 +118,49 @@ int main(int argc, char* argv[]) {
             while (true) {
                 printGrid(grid, GRID_SIZE, GRID_SIZE);
                 for (int rank = 1; rank < comm_sz; ++rank) {
-                    int start = getIndex((rank - 1) * rowcount_per_mpi -1, 0, x_size, y_size);
-                    int end = getIndex((rank) * rowcount_per_mpi, GRID_SIZE, x_size, y_size) ;
-                    int diff = end - start;
-                    std::cout << "Process Rank: " << my_rank << "\n"
-                    << "Variable Location: " << &start << " Name: start Value: " << start << "\n"
-                    << "Variable Location: " << &end << " Name: end Value: " << end << "\n"
-                    << "Variable Location: " << &(diff) << " Name: end - start Value: " << (end - start) << "\n"
-                    << "Variable Location: " << &elements_received_count << " Name: elements_received_count Value: " << elements_received_count << "\n"
-                    << "---------------------------------------------" << std::endl;
+                    int startRow = (rank - 1) * rowcount_per_mpi;
+                    int endRow = rank * rowcount_per_mpi;
 
-                    MPI_Send(grid.data() + start, end - start, MPI_CHAR, rank, 0, MPI_COMM_WORLD);
+                    int prevRow = (startRow - 1 + GRID_SIZE) % x_size;
+                    int nextRow = (endRow + x_size) % x_size;
+
+                    std::vector<char> localGrid(elements_received_count);
+
+                    for (int i = 0; i < elements_received_count + 2; ++i) {
+                        int sourceRow = (prevRow + i) % x_size;
+                        int startIdx = getIndex(sourceRow, 0, GRID_SIZE, GRID_SIZE);
+                        int targetIdx = i * y_size;
+
+                        std::copy(
+                            grid.begin() + startIdx, 
+                            grid.begin() + startIdx + y_size, 
+                            localGrid.begin() + targetIdx
+                        );
+                    }
+                    std::cout << "Sending from Process Rank: " << my_rank << "\n"
+                    << " Name: elements expected count Value: " << localGrid.size() << "\n"
+                    << " Name: end row: " << nextRow << "\n"
+                    << " Name: start row: " << startRow << "\n"
+                    << " Name: prevRow: " << prevRow << "\n"
+                    << " Name: nextRow: " << nextRow << "\n"
+
+                    << "---------------------------------------------" << std::endl;
+                    // I think this should work. I hope this works. If this doesn't work I give up
+                    MPI_Send(localGrid.data(), localGrid.size(), MPI_CHAR, rank, 0, MPI_COMM_WORLD);
+
                 }
 
                 for (int rank = 1; rank < comm_sz; ++rank) {
-                    int start = getIndex((rank - 1) * (elements_received_count), 0, x_size, y_size);
-                    int end = getIndex((rank) * elements_received_count, GRID_SIZE, x_size, y_size) ;
+                    int start = getIndex((rank - 1) * (rowcount_per_mpi), 0, GRID_SIZE, GRID_SIZE);
+                    int end = getIndex(((rank) * rowcount_per_mpi) -1, GRID_SIZE-1, GRID_SIZE, GRID_SIZE) ;
+                    std::cout << "Process Rank: " << my_rank << "\n"
+                    << " Name: elements expected count Value: " << end - start << "\n"
+                    << " Name: end Value: " << end << "\n"
+                    << " Name: start Value: " << start << "\n"
+                    << " Name: elements_rec_count: " << elements_received_count << "\n"
+                    << " Name: rowcount_per_mpi: " << rowcount_per_mpi << "\n"
 
+                    << "---------------------------------------------" << std::endl;
                     MPI_Recv(grid.data() + start, end - start, MPI_CHAR, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
                 }
@@ -153,14 +179,18 @@ int main(int argc, char* argv[]) {
     }else{
         while (true){
             usleep(200000 * my_rank);
-
+            // std::cout << "Process Rank: " << my_rank << "\n"
+            // << " Name: elements received count Value: " << elements_received_count << "\n"
+            // << "---------------------------------------------" << std::endl;
             std::vector<char> localGrid(elements_received_count);
 
             MPI_Recv(localGrid.data(), elements_received_count, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             
             // determineState(localGrid, x_size, y_size);
-
-            MPI_Send(localGrid.data() + y_size, x_size * y_size, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+            // std::cout << "Process Rank: " << my_rank << "\n"
+            // << " Name: elements sent count Value: " << x_size * y_size << "\n"
+            // << "---------------------------------------------" << std::endl;
+            MPI_Send(localGrid.data() + y_size, (x_size * y_size) -1, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
 
         }
     }
