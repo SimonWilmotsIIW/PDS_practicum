@@ -114,21 +114,23 @@ int main(int argc, char* argv[]) {
         int incrementor = 0;
         if (start == "y" || start == "Y") {
             printGridToFile(grid, GRID_SIZE, GRID_SIZE, "./outputs/output_grid_000000");
-
+            int iteration = 0;
             while (true) {
+                std::cout <<"---------------------------------------------\n"<<"---------------------------------------------\n"<<"---------------------------------------------\n"<<"ITERATION: "<< iteration << std::endl;
+                iteration +=1;
                 printGrid(grid, GRID_SIZE, GRID_SIZE);
                 for (int rank = 1; rank < comm_sz; ++rank) {
                     int startRow = (rank - 1) * rowcount_per_mpi;
                     int endRow = rank * rowcount_per_mpi;
 
-                    int prevRow = (startRow - 1 + GRID_SIZE) % x_size;
-                    int nextRow = (endRow + x_size) % x_size;
+                    int prevRow = (startRow - 1 + GRID_SIZE) % GRID_SIZE;
+                    int nextRow = (endRow + GRID_SIZE) % GRID_SIZE;
 
                     std::vector<char> localGrid(elements_received_count);
 
                     for (int i = 0; i < elements_received_count + 2; ++i) {
-                        int sourceRow = (prevRow + i) % x_size;
-                        int startIdx = getIndex(sourceRow, 0, GRID_SIZE, GRID_SIZE);
+                        // int sourceRow = (prevRow + i) % GRID_SIZE;
+                        int startIdx = getIndex(prevRow+i, 0, GRID_SIZE, GRID_SIZE);
                         int targetIdx = i * y_size;
 
                         std::copy(
@@ -147,20 +149,21 @@ int main(int argc, char* argv[]) {
                     << "---------------------------------------------" << std::endl;
                     // I think this should work. I hope this works. If this doesn't work I give up
                     MPI_Send(localGrid.data(), localGrid.size(), MPI_CHAR, rank, 0, MPI_COMM_WORLD);
+                    std::cout << "Sent" << std::endl;
 
                 }
 
                 for (int rank = 1; rank < comm_sz; ++rank) {
                     int start = getIndex((rank - 1) * (rowcount_per_mpi), 0, GRID_SIZE, GRID_SIZE);
-                    int end = getIndex(((rank) * rowcount_per_mpi) -1, GRID_SIZE-1, GRID_SIZE, GRID_SIZE) ;
-                    std::cout << "Process Rank: " << my_rank << "\n"
-                    << " Name: elements expected count Value: " << end - start << "\n"
-                    << " Name: end Value: " << end << "\n"
-                    << " Name: start Value: " << start << "\n"
-                    << " Name: elements_rec_count: " << elements_received_count << "\n"
-                    << " Name: rowcount_per_mpi: " << rowcount_per_mpi << "\n"
+                    int end = getIndex(((rank) * rowcount_per_mpi) -1, GRID_SIZE-1, GRID_SIZE, GRID_SIZE);
+                    // std::cout << "Process Rank: " << my_rank << "\n"
+                    // << " Name: elements expected count Value: " << end - start << "\n"
+                    // << " Name: end Value: " << end << "\n"
+                    // << " Name: start Value: " << start << "\n"
+                    // << " Name: elements_rec_count: " << elements_received_count << "\n"
+                    // << " Name: rowcount_per_mpi: " << rowcount_per_mpi << "\n"
 
-                    << "---------------------------------------------" << std::endl;
+                    // << "---------------------------------------------" << std::endl;
                     MPI_Recv(grid.data() + start, end - start, MPI_CHAR, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
                 }
@@ -183,6 +186,7 @@ int main(int argc, char* argv[]) {
             // << " Name: elements received count Value: " << elements_received_count << "\n"
             // << "---------------------------------------------" << std::endl;
             std::vector<char> localGrid(elements_received_count);
+            std::cout << "Process Rank: " << my_rank << "\n" << "Received count:" << elements_received_count << std::endl;
 
             MPI_Recv(localGrid.data(), elements_received_count, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             
