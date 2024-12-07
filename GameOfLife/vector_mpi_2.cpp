@@ -38,8 +38,11 @@ int main(int argc, char* argv[]) {
     }
 
     int rowcount_per_mpi = GRID_SIZE /(comm_sz-1);
+    // nr of elements per row
     int y_size = GRID_SIZE;
+    // relevant rows
     int x_size = rowcount_per_mpi;
+    // main that sends to side with buffer
     int elements_received_count = (rowcount_per_mpi+2) * y_size; //+2 for 1 buffer on each side
 
     if(my_rank==0){
@@ -157,14 +160,15 @@ int main(int argc, char* argv[]) {
                 for (int rank = 1; rank < comm_sz; ++rank) {
                     int start = getIndex((rank - 1) * (rowcount_per_mpi), 0, GRID_SIZE, GRID_SIZE);
                     int end = getIndex(((rank) * rowcount_per_mpi) -1, GRID_SIZE-1, GRID_SIZE, GRID_SIZE);
-                    // std::cout << "Process Rank: " << my_rank << "\n"
-                    // << " Name: elements expected count Value: " << end - start << "\n"
+                    std::cout << "Process Rank: " << my_rank << "\n"
+                    << " Name: elements expected count Value: " << end - start << "\n"
                     // << " Name: end Value: " << end << "\n"
                     // << " Name: start Value: " << start << "\n"
                     // << " Name: elements_rec_count: " << elements_received_count << "\n"
                     // << " Name: rowcount_per_mpi: " << rowcount_per_mpi << "\n"
 
-                    // << "---------------------------------------------" << std::endl;
+                    << "---------------------------------------------" << std::endl;
+                    // To check:
                     MPI_Recv(grid.data() + start, end - start, MPI_CHAR, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
                 }
@@ -194,11 +198,14 @@ int main(int argc, char* argv[]) {
             MPI_Recv(localGrid.data(), elements_received_count, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             // std::cout << "received data"<< std::endl;
             determineState(localGrid, x_size, y_size);
-            // std::cout << "Process Rank: " << my_rank << "\n"
-            // << " Name: elements sent count Value: " << x_size * y_size << "\n"
+            std::cout << "Process Rank: " << my_rank << "\n"
+            << " Name: elements sent count Value: " << x_size * y_size << "\n";
             MPI_Barrier(MPI_COMM_WORLD);
-            localGrid[100] = '1';
+            for(int k = 0; k < (x_size+2)*y_size; k++){
+                std::cout << localGrid[k];
+            }
             // << "---------------------------------------------" << std::endl;
+            // To check:
             MPI_Send(localGrid.data() + y_size, (x_size * y_size) -1, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
             MPI_Barrier(MPI_COMM_WORLD);
 
@@ -247,23 +254,26 @@ void printGridToFile(const std::vector<char>& grid, int xsize, int ysize, const 
 }
 
 void determineState(std::vector<char>& grid, int xsize, int ysize) {
+    //TODO: do this right so it actually copies
     auto copy = grid;
 
-    for (int a = 1; a < xsize; a++) {
+    for (int a = 1; a < xsize+1; a++) {
         for (int b = 0; b < ysize; b++) {
             int alive = 0;
             for (int c = -1; c <= 1; c++) {
                 for (int d = -1; d <= 1; d++) {
-                    if (!(c == '0' && d == '0')) {
-                        alive += (copy[getIndex(a + c, b + d, xsize, ysize)]);
+                    if (!(c == 0 && d == 0)) {
+                        alive += (copy[getIndex(a + c, b + d, xsize+2, ysize)] == '1');
                     }
                 }
             }
 
             if (alive < 2 || alive > 3) {
-                grid[getIndex(a, b, xsize, ysize)] = '1';
+                // cell dies
+                grid[getIndex(a, b, xsize+2, ysize)] = '1';
             } else if (alive == 3) {
-                grid[getIndex(a, b, xsize, ysize)] = '1';
+                // cell born
+                grid[getIndex(a, b, xsize+2, ysize)] = '1';
             }
         }
     }
