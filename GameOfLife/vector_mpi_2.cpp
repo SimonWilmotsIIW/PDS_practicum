@@ -152,6 +152,7 @@ int main(int argc, char* argv[]) {
                     std::cout << "Sent" << std::endl;
 
                 }
+                MPI_Barrier(MPI_COMM_WORLD);
 
                 for (int rank = 1; rank < comm_sz; ++rank) {
                     int start = getIndex((rank - 1) * (rowcount_per_mpi), 0, GRID_SIZE, GRID_SIZE);
@@ -167,6 +168,8 @@ int main(int argc, char* argv[]) {
                     MPI_Recv(grid.data() + start, end - start, MPI_CHAR, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
                 }
+                MPI_Barrier(MPI_COMM_WORLD);
+
                 std::ostringstream filenameStream;
                 filenameStream << "./outputs/output_grid_" << std::setw(4) << std::setfill('0') << incrementor << ".txt";
                 std::string outputFilename = filenameStream.str();
@@ -189,12 +192,15 @@ int main(int argc, char* argv[]) {
             std::cout << "Process Rank: " << my_rank << "\n" << "Received count:" << elements_received_count << std::endl;
 
             MPI_Recv(localGrid.data(), elements_received_count, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            
-            // determineState(localGrid, x_size, y_size);
+            // std::cout << "received data"<< std::endl;
+            determineState(localGrid, x_size, y_size);
             // std::cout << "Process Rank: " << my_rank << "\n"
             // << " Name: elements sent count Value: " << x_size * y_size << "\n"
+            MPI_Barrier(MPI_COMM_WORLD);
+            localGrid[100] = '1';
             // << "---------------------------------------------" << std::endl;
             MPI_Send(localGrid.data() + y_size, (x_size * y_size) -1, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+            MPI_Barrier(MPI_COMM_WORLD);
 
         }
     }
@@ -244,18 +250,18 @@ void determineState(std::vector<char>& grid, int xsize, int ysize) {
     auto copy = grid;
 
     for (int a = 1; a < xsize; a++) {
-        for (int b = 1; b < ysize; b++) {
+        for (int b = 0; b < ysize; b++) {
             int alive = 0;
             for (int c = -1; c <= 1; c++) {
                 for (int d = -1; d <= 1; d++) {
                     if (!(c == '0' && d == '0')) {
-                        alive += copy[getIndex(a + c, b + d, xsize, ysize)];
+                        alive += (copy[getIndex(a + c, b + d, xsize, ysize)]);
                     }
                 }
             }
 
             if (alive < 2 || alive > 3) {
-                grid[getIndex(a, b, xsize, ysize)] = '0';
+                grid[getIndex(a, b, xsize, ysize)] = '1';
             } else if (alive == 3) {
                 grid[getIndex(a, b, xsize, ysize)] = '1';
             }
