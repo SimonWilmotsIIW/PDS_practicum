@@ -221,7 +221,7 @@ std::vector<char> initializeGrid(int size) {
 }
 
 inline int getIndex(int x, int y, int xsize, int ysize) {
-    std::cout << "getIndex(" << x << ", " << y << ") " << xsize << " & " << ysize << "= " << (((x + xsize) % xsize) * ysize) + ((y + ysize) % ysize) << std::endl;
+    //std::cout << "getIndex(" << x << ", " << y << ") " << xsize << " & " << ysize << "= " << (((x + xsize) % xsize) * ysize) + ((y + ysize) % ysize) << std::endl;
     return (((x + xsize) % xsize) * ysize) + ((y + ysize) % ysize);
 }
 
@@ -258,8 +258,8 @@ void printGridToFile(const std::vector<char>& grid, int xsize, int ysize, const 
 }
 
 void determineState(std::vector<char>& grid, int xsize, int ysize) {
-    //TODO: do this right so it actually copies
-    auto copy = grid;
+    //copy constructor of std::vector == deep copy
+    std::vector<char> copy{grid};
 
     for (int a = 1; a < xsize+1; a++) {
         for (int b = 0; b < ysize; b++) {
@@ -279,8 +279,8 @@ void determineState(std::vector<char>& grid, int xsize, int ysize) {
                 // cell born
                 grid[getIndex(a, b, xsize+2, ysize)] = '1';
             } else {
-                // cell survives
-                copy[getIndex(a, b, xsize, ysize)] = copy[getIndex(a, b, xsize, ysize)];
+                // cell survives -> do nothing
+                //copy[getIndex(a, b, xsize, ysize)] = copy[getIndex(a, b, xsize, ysize)];
             }
         }
     }
