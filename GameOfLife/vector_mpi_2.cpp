@@ -257,9 +257,9 @@ void printGridToFile(const std::vector<char>& grid, int xsize, int ysize, const 
     outFile.close();
 }
 
-void determineState(std::vector<char>& grid, int xsize, int ysize) {
+void determineState(std::vector<char>& returnGrid, int xsize, int ysize) {
     //copy constructor of std::vector == deep copy
-    std::vector<char> copy{grid};
+    std::vector<char> dataGrid{returnGrid};
 
     for (int a = 1; a < xsize+1; a++) {
         for (int b = 0; b < ysize; b++) {
@@ -267,20 +267,20 @@ void determineState(std::vector<char>& grid, int xsize, int ysize) {
             for (int c = -1; c <= 1; c++) {
                 for (int d = -1; d <= 1; d++) {
                     if (!(c == 0 && d == 0)) {
-                        alive += (copy[getIndex(a + c, b + d, xsize+2, ysize)] == '1');
+                        alive += (dataGrid[getIndex(a + c, b + d, xsize+2, ysize)] == '1');
                     }
                 }
             }
 
             if (alive < 2 || alive > 3) {
                 // cell dies
-                grid[getIndex(a, b, xsize+2, ysize)] = '1';
+                returnGrid[getIndex(a, b, xsize+2, ysize)] = '1';
             } else if (alive == 3) {
                 // cell born
-                grid[getIndex(a, b, xsize+2, ysize)] = '1';
+                returnGrid[getIndex(a, b, xsize+2, ysize)] = '1';
             } else {
                 // cell survives -> do nothing
-                //copy[getIndex(a, b, xsize, ysize)] = copy[getIndex(a, b, xsize, ysize)];
+                returnGrid[getIndex(a, b, xsize, ysize)] = '1';
             }
         }
     }
