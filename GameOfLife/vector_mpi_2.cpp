@@ -131,14 +131,14 @@ int main(int argc, char* argv[]) {
 
                     std::vector<char> localGrid(elements_received_count);
 
-                    for (int i = 0; i < elements_received_count + 2; ++i) {
+                    for (int i = 0; i < x_size + 2; ++i) {
                         // int sourceRow = (prevRow + i) % GRID_SIZE;
                         int startIdx = getIndex(prevRow+i, 0, GRID_SIZE, GRID_SIZE);
                         int targetIdx = i * y_size;
 
                         std::copy(
                             grid.begin() + startIdx, 
-                            grid.begin() + startIdx + elements_received_count, 
+                            grid.begin() + startIdx + y_size, 
                             localGrid.begin() + targetIdx
                         );
                     }
@@ -201,12 +201,12 @@ int main(int argc, char* argv[]) {
             MPI_Recv(localGrid.data(), elements_received_count, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             // std::cout << "received data"<< std::endl;
             determineState(localGrid, x_size, y_size);
+            // for(int k = 0; k < (x_size+2)*y_size; k++){
+            //     std::cout << localGrid[k];
+            // }
             std::cout << "Process Rank: " << my_rank << "\n"
             << "Name: elements sent count Value: " << x_size * y_size << "\n" << "iteration" << iteration << "\n";
             MPI_Barrier(MPI_COMM_WORLD);
-            for(int k = 0; k < (x_size+2)*y_size; k++){
-                std::cout << localGrid[k];
-            }
             // << "---------------------------------------------" << std::endl;
             // To check:
             MPI_Send(localGrid.data() + y_size, (x_size * y_size), MPI_CHAR, 0, 0, MPI_COMM_WORLD);
@@ -274,13 +274,14 @@ void determineState(std::vector<char>& returnGrid, int xsize, int ysize) {
 
             if (alive < 2 || alive > 3) {
                 // cell dies
-                returnGrid[getIndex(a, b, xsize+2, ysize)] = '1';
+                returnGrid[getIndex(a, b, xsize+2, ysize)] = '0';
             } else if (alive == 3) {
                 // cell born
                 returnGrid[getIndex(a, b, xsize+2, ysize)] = '1';
             } else {
                 // cell survives -> do nothing
-                returnGrid[getIndex(a, b, xsize, ysize)] = '1';
+                // can this just drop?
+                returnGrid[getIndex(a, b, xsize, ysize)] = dataGrid[getIndex(a, b, xsize, ysize)];
             }
         }
     }
