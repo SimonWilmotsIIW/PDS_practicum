@@ -5,145 +5,213 @@
 #include <string>
 #include <unistd.h>
 #include <iomanip>
-
-#define OS_LINUX
+#include <vector>
+#include <mpi.h>
+#include "mpi_timer.cpp"
 
 #define COLOR_RED "\033[31m"
 #define COLOR_GREEN "\033[32m"
 #define COLOR_BLUE "\033[34m"
 #define COLOR_RESET "\033[0m"
+#define ITERATION_COUNT 32
+#define MAX_ITERATIONS 128
+#define GRID_SIZE 32*32*32
+//view influence of more cores/threads on VSC
+//Why do we even use MPI?
 
-//using namespace std;
-
-//TODO: increase size by a lot
-//TODO: wrap-around grid instead of borders
-//TODO: write to file not write to console
-//TODO: work on VNC & time, max 72 cores on 1 node (max 4 nodes)
-//TODO: compare cores on 1 node with spread cores
-
-const int GRID_SIZE = 32;
-void printGrid(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1]);
-void determineState(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1]);
+void printGrid(const std::vector<char>& grid, int xsize, int ysize);
+void determineState(std::vector<char>& grid, int xsize, int ysize);
 void clearScreen(void);
-void printGridToFile(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1], const std::string& filename);
+void printGridToFile(const std::vector<char>& grid, int xsize, int ysize, const std::string& filename);
+std::vector<char> initializeGrid(int size);
+inline int getIndex(int x, int y, int xsize, int ysize);
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
+    int global_comm_sz;
+    int comm_sz;
+    int my_rank;
 
-    // system( "color A" );//LGT green
-    std::cout << COLOR_GREEN;
-    clearScreen();
+    MPI_Init(NULL, NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1] = {};
-    int x, y, n;
+    if( GRID_SIZE %(comm_sz-1) != 0){
+        return 1;
+    }
 
-    std::string number_of_cells;
-    std::string start;
-    std::string filename;
+    int rowcount_per_mpi = GRID_SIZE /(comm_sz-1);
+    // nr of elements per row
+    int y_size = GRID_SIZE;
+    // relevant rows
+    int x_size = rowcount_per_mpi;
+    // main that sends to side with buffer
+    int elements_received_count = (rowcount_per_mpi+2) * y_size; //+2 for 1 buffer on each side
 
-    if(argc == 2){
-      filename = argv[1];
-      std::ifstream readfile(filename);
-      if (readfile.is_open()) {
-      std::string fileline, xx, yy;
+    if(my_rank==0){
+        // clearScreen();
+        AutoAverageTimer mainTimer("main_program_timer");
 
-      while (std::getline(readfile, fileline)) {
-          std::stringstream ss(fileline);
+        //std::cout << COLOR_BLUE;
 
-          std::getline(ss, xx, ' ');
-          std::getline(ss, yy, ' ');
+        auto grid = initializeGrid(GRID_SIZE);
+        int x, y;
 
-          x = stoi(xx);
-          y = stoi(yy);
+        std::string number_of_cells;
+        std::string start;
+        std::string filename;
+        for (int iteration=0; iteration < ITERATION_COUNT; iteration++){
+            if (argc == 2) {
+                filename = argv[1];
+                std::ifstream readfile(filename);
+                if (readfile.is_open()) {
+                    std::string fileline, xx, yy;
+                    while (std::getline(readfile, fileline)) {
+                        std::stringstream ss(fileline);
+                        std::getline(ss, xx, ' ');
+                        std::getline(ss, yy, ' ');
 
-          gridOne[x][y] = true;
-        }
-      }
-      start = 'y';
-    }else{
+                        x = std::stoi(xx);
+                        y = std::stoi(yy);
 
-    std::cout << "GAME OF LIFE - By Simon Wilmots & Stijn Jacobs for Parallel and Distributed Systems [PDS_4717]" << std::endl;
-    std::cout << "Devised by the British mathematician John Horton Conway in 1970." << std::endl;
-    std::cout << std::endl;
-    std::cout << "Rules:" << std::endl;
-    std::cout << "Played on a two-dimensional orthogonal grid of square cells, each of which is in one of two possible states, life or dead."<< std::endl;
-    std::cout << "Every cell interacts with its eight neighbours." << std::endl;
-    std::cout << "At each step in time, the following transitions occur:" << std::endl;
-    std::cout << "1. Any live cell with fewer than two live neighbours dies, as if caused by under-population." << std::endl;
-    std::cout << "2. Any live cell with two or three live neighbours lives on to the next generation." << std::endl;
-    std::cout << "3. Any live cell with more than three live neighbours dies, as if by over-population." << std::endl;
-    std::cout << "4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction." << std::endl;
-    std::cout << "Text from https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life" << std::endl;
-    std::cout << std::endl;
-    std::cout << "";
-    std::cout << COLOR_GREEN;
-    std::cout << "O - living cell" << std::endl;
-    std::cout << ". - dead cell" << std::endl;
-    std::cout << std::endl;
-    std::cout << "Enter the number of cells, or 'r' to read cells from file: ";
-    std::cin >> number_of_cells;
-    std::cout << std::endl;
-
-    if (number_of_cells == "r") {
-        while (true) {
-
-            std::cout << "Enter name of file to read from: " << std::endl;
-            std::cin >> filename;
-
-            std::ifstream readfile(filename);
-            if (readfile.is_open()) {
-            std::string fileline, xx, yy;
-
-            while (std::getline(readfile, fileline)) {
-                std::stringstream ss(fileline);
-
-                std::getline(ss, xx, ' ');
-                std::getline(ss, yy, ' ');
-
-                x = stoi(xx);
-                y = stoi(yy);
-
-                gridOne[x][y] = true;
-            }
-            break;
+                        grid[getIndex(x, y, GRID_SIZE, GRID_SIZE)] = '1';
+                    }
+                }
+                start = "y";
             } else {
-            std::cout << "File not found :(" << std::endl;
+                std::cout << "Enter the number of cells, or 'r' to read cells from file: ";
+                std::cin >> number_of_cells;
+                std::cout << std::endl;
+
+                if (number_of_cells == "r") {
+                    while (true) {
+                        std::cout << "Enter name of file to read from: ";
+                        std::cin >> filename;
+
+                        std::ifstream readfile(filename);
+                        if (readfile.is_open()) {
+                            std::string fileline, xx, yy;
+                            while (std::getline(readfile, fileline)) {
+                                std::stringstream ss(fileline);
+                                std::getline(ss, xx, ' ');
+                                std::getline(ss, yy, ' ');
+
+                                x = std::stoi(xx);
+                                y = std::stoi(yy);
+
+                                grid[getIndex(x, y, GRID_SIZE, GRID_SIZE)] = '1';
+                            }
+                            break;
+                        } else {
+                            std::cout << "File not found :(" << std::endl;
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < std::stoi(number_of_cells); i++) {
+                        std::cout << "Cell " << i + 1 << "/" << number_of_cells << "\nEnter the x & y coordinates: ";
+                        std::cin >> x >> y;
+                        grid[getIndex(x, y, GRID_SIZE, GRID_SIZE)] = '1';
+                        //printGrid(grid, GRID_SIZE, GRID_SIZE);
+                    }
+                }
+                std::cout << "Grid setup is done. Start the game? (y/n): ";
+                std::cin >> start;
+            }
+
+            int incrementor = 0;
+            if (start == "y" || start == "Y") {
+                //printGridToFile(grid, GRID_SIZE, GRID_SIZE, "./outputs/output_grid_000000");
+                int iteration = 0;
+                mainTimer.start();
+                while (iteration < MAX_ITERATIONS) {
+                    // std::cout <<"---------------------------------------------\n"<<"---------------------------------------------\n"<<"---------------------------------------------\n"<<"ITERATION: "<< iteration << std::endl;
+                    iteration +=1;
+                    // printGrid(grid, GRID_SIZE, GRID_SIZE);
+                    for (int rank = 1; rank < comm_sz; ++rank) {
+                        int startRow = (rank - 1) * rowcount_per_mpi;
+                        int endRow = rank * rowcount_per_mpi;
+
+                        int prevRow = (startRow - 1 + GRID_SIZE) % GRID_SIZE;
+                        int nextRow = (endRow + GRID_SIZE) % GRID_SIZE;
+
+                        std::vector<char> localGrid(elements_received_count);
+
+                        for (int i = 0; i < x_size + 2; ++i) {
+                            // int sourceRow = (prevRow + i) % GRID_SIZE;
+                            int startIdx = getIndex(prevRow+i, 0, GRID_SIZE, GRID_SIZE);
+                            int targetIdx = i * y_size;
+
+                            std::copy(
+                                grid.begin() + startIdx, 
+                                grid.begin() + startIdx + y_size, 
+                                localGrid.begin() + targetIdx
+                            );
+                        }
+
+                        // I think this should work. I hope this works. If this doesn't work I give up
+                        //MPI_Send(localGrid.data(), localGrid.size(), MPI_CHAR, rank, 0, MPI_COMM_WORLD);
+                        MPI_Send(localGrid.data(), elements_received_count, MPI_CHAR, rank, 0, MPI_COMM_WORLD);
+
+                    }
+                    MPI_Barrier(MPI_COMM_WORLD);
+
+                    for (int rank = 1; rank < comm_sz; ++rank) {
+                        int start = getIndex((rank - 1) * (rowcount_per_mpi), 0, GRID_SIZE, GRID_SIZE);
+                        int end = getIndex(((rank) * rowcount_per_mpi) -1, GRID_SIZE-1, GRID_SIZE, GRID_SIZE);
+
+                        //OLD : //MPI_Recv(grid.data() + start, end - start, MPI_CHAR, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                        MPI_Recv(grid.data() + start, (x_size * y_size), MPI_CHAR, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+                    }
+                    MPI_Barrier(MPI_COMM_WORLD);
+
+                    // std::ostringstream filenameStream;
+                    // filenameStream << "./outputs/output_grid_" << std::setw(4) << std::setfill('0') << incrementor << ".txt";
+                    // std::string outputFilename = filenameStream.str();
+                    // printGridToFile(grid, GRID_SIZE, GRID_SIZE, outputFilename);
+                    incrementor++;
+
+                    // usleep(200000);
+                    // clearScreen();
+                }
+                mainTimer.stop();
+                std::ostringstream filenameStream;
+                filenameStream << "./outputs/output_grid_final" << ".txt";
+                std::string outputFilename = filenameStream.str();
+                printGridToFile(grid, GRID_SIZE, GRID_SIZE, outputFilename);
+            } else {
+                return 0;
             }
         }
-    } else {
+    }else{
+        for (int it=0; it < ITERATION_COUNT; it++){
 
-        for (int i = 0; i < stoi(number_of_cells); i++) {
-            std::cout << "Cell " << i+1 << "/" << stoi(number_of_cells) << "\nEnter the x & y coordinate of cell " << i + 1
-                << " with format x <space> y :" << "\n>> " ; 
-            std::cin >> x >> y;
-            gridOne[x][y] = true;
-            printGrid(gridOne);
+            int iteration = 0;
+            while (iteration < MAX_ITERATIONS){
+                iteration +=1;
+                // usleep(200000 * my_rank);
+
+                std::vector<char> localGrid(elements_received_count);
+
+                MPI_Recv(localGrid.data(), elements_received_count, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                determineState(localGrid, x_size, y_size);
+                MPI_Barrier(MPI_COMM_WORLD);
+
+                // To check:
+                MPI_Send(localGrid.data() + y_size, (x_size * y_size), MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+                MPI_Barrier(MPI_COMM_WORLD);
+
+            }
         }
-      }
-      std::cout << "Grid setup is done. Start the game ? (y/n)" << std::endl;
-      printGrid(gridOne);
-      std::cin >> start;
     }
+}
 
-    int incrementor = 0;
-    if (start == "y" || start == "Y") {
-        while (true) {
-            printGrid(gridOne);
-            determineState(gridOne);
+std::vector<char> initializeGrid(int size) {
+    return std::vector<char>((size) * (size), '0');
+}
 
-            std::ostringstream filenameStream;
-            filenameStream << "./outputs/output_grid_" << std::setw(4) << std::setfill('0') << incrementor << ".txt";
-            std::string filename = filenameStream.str();
-            printGridToFile(gridOne, filename);
-            incrementor++;
-
-            usleep(200000);
-            clearScreen();
-        }
-    } else {
-    std::cout << COLOR_RESET;
-    clearScreen();
-    return 0;
-    }
+inline int getIndex(int x, int y, int xsize, int ysize) {
+    //std::cout << "getIndex(" << x << ", " << y << ") " << xsize << " & " << ysize << "= " << (((x + xsize) % xsize) * ysize) + ((y + ysize) % ysize) << std::endl;
+    return (((x + xsize) % xsize) * ysize) + ((y + ysize) % ysize);
 }
 
 void clearScreen(void) {
@@ -153,77 +221,57 @@ void clearScreen(void) {
     std::cout << "\033[2J;" << "\033[1;1H"; // clears screen and moves cursor to home
 }
 
-void printGrid(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1]) {
-  for (int a = 1; a < GRID_SIZE; a++) {
-    for (int b = 1; b < GRID_SIZE; b++) {
-      if (gridOne[a][b] == true) {
-        std::cout << " O ";
-      } else {
-        std::cout << " . ";
-      }
-      if (b == GRID_SIZE - 1) {
+void printGrid(const std::vector<char>& grid, int xsize, int ysize) {
+    for (int a = 0; a < xsize; a++) {
+        for (int b = 0; b < ysize; b++) {
+            std::cout << (grid[getIndex(a, b, xsize, ysize)]);
+        }
         std::cout << std::endl;
-      }
     }
-  }
 }
 
-
-void printGridToFile(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1], const std::string& filename) {
-    std::ofstream outFile(filename); 
+void printGridToFile(const std::vector<char>& grid, int xsize, int ysize, const std::string& filename) {
+    std::ofstream outFile(filename);
     if (!outFile.is_open()) {
         std::cerr << "Error: Could not open file " << filename << " for writing." << std::endl;
-        return; 
+        return;
     }
 
-    for (int a = 1; a < GRID_SIZE; a++) {
-        for (int b = 1; b < GRID_SIZE; b++) {
-            if (gridOne[a][b] == true) {
-                outFile << " O ";
+    for (int a = 0; a < xsize; a++) {
+        for (int b = 0; b < ysize; b++) {
+            outFile << grid[getIndex(a, b, xsize, ysize)];
+        }
+        outFile << std::endl;
+    }
+    outFile.close();
+}
+
+void determineState(std::vector<char>& returnGrid, int xsize, int ysize) {
+    //copy constructor of std::vector == deep copy
+    std::vector<char> dataGrid{returnGrid};
+
+    for (int a = 1; a < xsize+1; a++) {
+        for (int b = 0; b < ysize; b++) {
+            int alive = 0;
+            for (int c = -1; c <= 1; c++) {
+                for (int d = -1; d <= 1; d++) {
+                    if (!(c == 0 && d == 0)) {
+                        alive += (dataGrid[getIndex(a + c, b + d, xsize+2, ysize)] == '1');
+                    }
+                }
+            }
+
+            if (alive < 2 || alive > 3) {
+                // cell dies
+                returnGrid[getIndex(a, b, xsize+2, ysize)] = '0';
+            } else if (alive == 3) {
+                // cell born
+                returnGrid[getIndex(a, b, xsize+2, ysize)] = '1';
             } else {
-                outFile << " . ";
-            }
-            if (b == GRID_SIZE - 1) {
-                outFile << std::endl;
+                // cell survives -> do nothing
+                // can this just drop?
+                returnGrid[getIndex(a, b, xsize, ysize)] = dataGrid[getIndex(a, b, xsize, ysize)];
             }
         }
     }
-
-    outFile.close(); // Close the file after writing
-    std::cout << "Grid written to file: " << filename << std::endl; // Inform the user
-}
-
-void compareGrid(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1], bool gridTwo[GRID_SIZE + 1][GRID_SIZE + 1]) {
-  for (int a = 0; a < GRID_SIZE; a++) {
-    for (int b = 0; b < GRID_SIZE; b++) {
-      gridTwo[a][b] = gridOne[a][b];
-    }
-  }
-}
-
-void determineState(bool gridOne[GRID_SIZE + 1][GRID_SIZE + 1]) {
-  bool gridTwo[GRID_SIZE + 1][GRID_SIZE + 1] = {};
-  compareGrid(gridOne, gridTwo);
-
-  for (int a = 1; a < GRID_SIZE; a++) {
-    for (int b = 1; b < GRID_SIZE; b++) {
-      int alive = 0;
-      for (int c = -1; c < 2; c++) {
-        for (int d = -1; d < 2; d++) {
-          if (!(c == 0 && d == 0)) {
-            if (gridTwo[a + c][b + d]) {
-              ++alive;
-            }
-          }
-        }
-      }
-      if (alive < 2) {
-        gridOne[a][b] = false;
-      } else if (alive == 3) {
-        gridOne[a][b] = true;
-      } else if (alive > 3) {
-        gridOne[a][b] = false;
-      }
-    }
-  }
 }
