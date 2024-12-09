@@ -14,7 +14,7 @@
 #define COLOR_BLUE "\033[34m"
 #define COLOR_RESET "\033[0m"
 #define ITERATION_COUNT 32
-#define MAX_ITERATIONS 128
+#define MAX_ITERATIONS 20
 #define GRID_SIZE 32*32*32
 //view influence of more cores/threads on VSC
 //Why do we even use MPI?
