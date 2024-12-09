@@ -1,7 +1,7 @@
 #! /bin/bash -l
 #SBATCH --cluster=wice
 #SBATCH --account=lp_h_pds_iiw
-#SBATCH --ntasks=65
+#SBATCH --ntasks=33
 #SBATCH --nodes=2
 #SBATCH --cpus-per-task=1
 #SBATCH --error="%x.e%A"
@@ -17,6 +17,6 @@ module load OpenMPI/4.1.1-GCC-10.3.0
 
 mpicxx -O3 -DNDEBUG -g -Wall -I/usr/include/lam -o main main.cpp
 
-mpiexec -n 65 ./main testboard.txt
+mpiexec -n 33 ./main testboard.txt
 
 /data/leuven/303/vsc30380/slurmquote.py
