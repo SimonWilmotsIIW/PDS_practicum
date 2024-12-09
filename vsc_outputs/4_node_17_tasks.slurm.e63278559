@@ -1,0 +1,15 @@
+The following modules were not unloaded:
+  (Use "module --force purge" to unload all):
+
+  1) cluster/wice/batch
+slurmstepd: error: Prolog hung on node l33c27n2
+main.cpp: In function ‘int main(int, char**)’:
+main.cpp:134:29: warning: unused variable ‘nextRow’ [-Wunused-variable]
+  134 |                         int nextRow = (endRow + GRID_SIZE) % GRID_SIZE;
+      |                             ^~~~~~~
+main.cpp:159:29: warning: unused variable ‘end’ [-Wunused-variable]
+  159 |                         int end = getIndex(((rank) * rowcount_per_mpi) -1, GRID_SIZE-1, GRID_SIZE, GRID_SIZE);
+      |                             ^~~
+main.cpp:30:9: warning: unused variable ‘global_comm_sz’ [-Wunused-variable]
+   30 |     int global_comm_sz;
+      |         ^~~~~~~~~~~~~~
