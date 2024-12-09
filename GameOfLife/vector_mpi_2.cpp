@@ -12,8 +12,8 @@
 #define COLOR_GREEN "\033[32m"
 #define COLOR_BLUE "\033[34m"
 #define COLOR_RESET "\033[0m"
-
-#define GRID_SIZE 32
+#define MAX_ITERATIONS 32
+#define GRID_SIZE 32*32
 //view influence of more cores/threads on VSC
 //Why do we even use MPI?
 
@@ -118,10 +118,10 @@ int main(int argc, char* argv[]) {
         if (start == "y" || start == "Y") {
             printGridToFile(grid, GRID_SIZE, GRID_SIZE, "./outputs/output_grid_000000");
             int iteration = 0;
-            while (true) {
+            while (iteration < MAX_ITERATIONS) {
                 std::cout <<"---------------------------------------------\n"<<"---------------------------------------------\n"<<"---------------------------------------------\n"<<"ITERATION: "<< iteration << std::endl;
                 iteration +=1;
-                printGrid(grid, GRID_SIZE, GRID_SIZE);
+                // printGrid(grid, GRID_SIZE, GRID_SIZE);
                 for (int rank = 1; rank < comm_sz; ++rank) {
                     int startRow = (rank - 1) * rowcount_per_mpi;
                     int endRow = rank * rowcount_per_mpi;
@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
                     // I think this should work. I hope this works. If this doesn't work I give up
                     //MPI_Send(localGrid.data(), localGrid.size(), MPI_CHAR, rank, 0, MPI_COMM_WORLD);
                     MPI_Send(localGrid.data(), elements_received_count, MPI_CHAR, rank, 0, MPI_COMM_WORLD);
-                    std::cout << "Sent" << std::endl;
+                    // std::cout << "Sent" << std::endl;
 
                 }
                 MPI_Barrier(MPI_COMM_WORLD);
@@ -175,28 +175,32 @@ int main(int argc, char* argv[]) {
                 }
                 MPI_Barrier(MPI_COMM_WORLD);
 
-                std::ostringstream filenameStream;
-                filenameStream << "./outputs/output_grid_" << std::setw(4) << std::setfill('0') << incrementor << ".txt";
-                std::string outputFilename = filenameStream.str();
-                printGridToFile(grid, GRID_SIZE, GRID_SIZE, outputFilename);
+                // std::ostringstream filenameStream;
+                // filenameStream << "./outputs/output_grid_" << std::setw(4) << std::setfill('0') << incrementor << ".txt";
+                // std::string outputFilename = filenameStream.str();
+                // printGridToFile(grid, GRID_SIZE, GRID_SIZE, outputFilename);
                 incrementor++;
 
-                usleep(200000);
-                clearScreen();
+                // usleep(200000);
+                // clearScreen();
             }
+            std::ostringstream filenameStream;
+            filenameStream << "./outputs/output_grid_final" << ".txt";
+            std::string outputFilename = filenameStream.str();
+            printGridToFile(grid, GRID_SIZE, GRID_SIZE, outputFilename);
         } else {
             return 0;
         }
     }else{
         int iteration = 0;
-        while (true){
+        while (iteration < MAX_ITERATIONS){
             iteration +=1;
-            usleep(200000 * my_rank);
+            // usleep(200000 * my_rank);
             // std::cout << "Process Rank: " << my_rank << "\n"
             // << " Name: elements received count Value: " << elements_received_count << "\n"
             // << "---------------------------------------------" << std::endl;
             std::vector<char> localGrid(elements_received_count);
-            std::cout << "Process Rank: " << my_rank << "\n" << "Received count:" << elements_received_count << std::endl;
+            // std::cout << "Process Rank: " << my_rank << "\n" << "Received count:" << elements_received_count << std::endl;
 
             MPI_Recv(localGrid.data(), elements_received_count, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             // std::cout << "received data"<< std::endl;
@@ -204,8 +208,8 @@ int main(int argc, char* argv[]) {
             // for(int k = 0; k < (x_size+2)*y_size; k++){
             //     std::cout << localGrid[k];
             // }
-            std::cout << "Process Rank: " << my_rank << "\n"
-            << "Name: elements sent count Value: " << x_size * y_size << "\n" << "iteration" << iteration << "\n";
+            // std::cout << "Process Rank: " << my_rank << "\n"
+            // << "Name: elements sent count Value: " << x_size * y_size << "\n" << "iteration" << iteration << "\n";
             MPI_Barrier(MPI_COMM_WORLD);
             // << "---------------------------------------------" << std::endl;
             // To check:
