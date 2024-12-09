@@ -3,6 +3,7 @@
 CPU_LIST=(3)
 
 for CPUs in "${CPU_LIST[@]}"; do
+	echo ${CPU}s
     cat > temp_job.slurm <<EOF
 #! /bin/bash -l
 #SBATCH --cluster=wice
