@@ -18,7 +18,7 @@ module purge
 
 module load cluster/wice/batch
 module load GCC/10.3.0
-module load MPICH/3.4.2-GCC-10.3.0
+module load OpenMPI/4.1.1-GCC-10.3.0
 
 make main
 
