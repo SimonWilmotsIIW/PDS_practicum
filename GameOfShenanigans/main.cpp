@@ -13,7 +13,7 @@
 #define COLOR_GREEN "\033[32m"
 #define COLOR_BLUE "\033[34m"
 #define COLOR_RESET "\033[0m"
-#define GRID_SIZE 32*32
+#define GRID_SIZE 32
 //view influence of more cores/threads on VSC
 //Why do we even use MPI?
 
@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
 
             int incrementor = 0;
             if (start == "y" || start == "Y") {
-                //printGridToFile(grid, GRID_SIZE, GRID_SIZE, "./outputs/output_grid_000000");
+                printGridToFile(grid, GRID_SIZE, GRID_SIZE, "./outputs/output_grid_000000");
                 int iteration = 0;
                 mainTimer.start();
                 while (iteration < MAX_ITERATIONS) {
@@ -169,10 +169,10 @@ int main(int argc, char* argv[]) {
                     }
                     MPI_Barrier(MPI_COMM_WORLD);
 
-                    // std::ostringstream filenameStream;
-                    // filenameStream << "./outputs/output_grid_" << std::setw(4) << std::setfill('0') << incrementor << ".txt";
-                    // std::string outputFilename = filenameStream.str();
-                    // printGridToFile(grid, GRID_SIZE, GRID_SIZE, outputFilename);
+                    std::ostringstream filenameStream;
+                    filenameStream << "./outputs/output_grid_" << std::setw(4) << std::setfill('0') << incrementor << ".txt";
+                    std::string outputFilename = filenameStream.str();
+                    printGridToFile(grid, GRID_SIZE, GRID_SIZE, outputFilename);
                     incrementor++;
 
                     // usleep(200000);
