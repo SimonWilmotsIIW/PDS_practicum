@@ -15,8 +15,8 @@ module load cluster/wice/batch
 module load GCC/10.3.0
 module load OpenMPI/4.1.1-GCC-10.3.0
 
-mpicxx -O3 -DNDEBUG -g -Wall -I/usr/include/lam -o main main.cpp
+mpicxx -O3 -DNDEBUG -g -Wall -I/usr/include/lam -o main1_n_5_t main.cpp
 
-mpiexec -n 5 ./main testboard.txt
+mpiexec -n 5 ./main1_n_5_t testboard.txt
 
 /data/leuven/303/vsc30380/slurmquote.py
