@@ -1,3 +1,10 @@
+sbatch 1_node_02_tasks.slurm
+sbatch 1_node_03_tasks.slurm
+sbatch 1_node_05_tasks.slurm
+sbatch 1_node_09_tasks.slurm
+sbatch 1_node_17_tasks.slurm
+sbatch 1_node_33_tasks.slurm
+sbatch 1_node_65_tasks.slurm
 sbatch 2_node_02_tasks.slurm
 sbatch 2_node_03_tasks.slurm
 sbatch 2_node_05_tasks.slurm
