@@ -5,7 +5,7 @@
 #SBATCH --nodes=2
 #SBATCH --cpus-per-task=1
 #SBATCH --error="%x.e%A"
-#SBATCH --output="%x.o%A"
+#SBATCH --output="./outputs/%x.o%A"
 
 source /data/leuven/303/vsc30380/slurmhooks
 

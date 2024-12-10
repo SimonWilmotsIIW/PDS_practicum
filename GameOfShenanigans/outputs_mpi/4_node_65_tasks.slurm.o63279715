@@ -1,0 +1,39 @@
+SLURM_JOB_ID: 63279715
+SLURM_JOB_USER: vsc36706
+SLURM_JOB_ACCOUNT: lp_h_pds_iiw
+SLURM_JOB_NAME: 4_node_65_tasks.slurm
+SLURM_CLUSTER_NAME: wice
+SLURM_JOB_PARTITION: batch
+SLURM_NNODES: 4
+SLURM_NODELIST: r33c30n3,r33c32n[2-4]
+SLURM_JOB_CPUS_PER_NODE: 10,53,1(x2)
+Date: Tue Dec 10 12:04:57 CET 2024
+Walltime: 00-01:00:00
+========================================================================
+------------------------------------------------------------------------------
+
+#main_program_timer 0.543746 +/- 0.0281937 sec (32 measurements)
+
+#main_program_timer 0.343399 +/- 0.00514955 sec (32 measurements)
+
+#main_program_timer 0.250053 +/- 0.00331116 sec (32 measurements)
+
+#main_program_timer 0.246212 +/- 0.0024299 sec (32 measurements)
+
+#main_program_timer 0.228486 +/- 0.00292851 sec (32 measurements)
+
+#main_program_timer 0.195236 +/- 0.00184462 sec (32 measurements)
+
+#main_program_timer 0.146706 +/- 0.00220213 sec (32 measurements)
+
+#main_program_timer 0.162835 +/- 0.00223727 sec (32 measurements)
+0.00
+------------------------------------------------------------------------------
+JOBSTAT:ELAPSED_SECONDS=884
+JOBSTAT:SLURM_CLUSTER_NAME=wice
+JOBSTAT:SLURM_NODELIST=r33c30n3,r33c32n[2-4]
+JOBSTAT:SLURM_NTASKS=65
+JOBSTAT:SLURM_GPUS_PER_NODE=
+JOBSTAT:SLURM_JOB_CPUS_PER_NODE=10,53,1(x2)
+JOBSTAT:SLURM_JOB_NUM_NODES=4
+JOBSTAT:SLURM_JOB_PARTITION=batch
