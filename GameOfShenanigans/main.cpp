@@ -14,6 +14,8 @@
 #define COLOR_BLUE "\033[34m"
 #define COLOR_RESET "\033[0m"
 #define GRID_SIZE 32*32*8
+#define ITERATION_COUNT 32
+#define MAX_ITERATIONS 20
 //view influence of more cores/threads on VSC
 //Why do we even use MPI?
 
@@ -25,8 +27,6 @@ std::vector<char> initializeGrid(int size);
 inline int getIndex(int x, int y, int xsize, int ysize);
 
 int main(int argc, char* argv[]) {
-    int MAX_ITERATIONS = 10;
-    int ITERATION_COUNT = 1;
     int EXTRA = 1;
     MAX_ITERATIONS = MAX_ITERATIONS/(EXTRA+1);
     
