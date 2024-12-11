@@ -1,3 +1,6 @@
+**/slurms/**
+**/outputs/
+
 # Prerequisites
 *.d
 
